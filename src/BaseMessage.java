@@ -5,7 +5,7 @@
  * @author Eli
  *
  */
-public class BaseMessage implements java.io.Serializable {
+public abstract class BaseMessage implements java.io.Serializable {
 
 	/**
 	 * This field represents a version of this class, so we don't accidentally try to load
