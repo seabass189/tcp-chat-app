@@ -5,11 +5,13 @@ public enum MessageType {
 	 * Sent by the client to the server when the client wants to connect with the server
 	 * Data: messageText contains Name of the user
 	 */
+	//TODO: is the originating user of this type of message supposed to be null?
 	CONNECTION_REQUEST_MESSAGE(true, false, true),
 	
 	/**
 	 * Sent by the server to the client when the server accepts the connection
 	 * Data: ** A list of all currently connected users
+	 * Data: ** The client's User object
 	 */
 	CONNECTION_ACKNOWLEDGEMENT_MESSAGE(false, true),
 	
@@ -24,10 +26,9 @@ public enum MessageType {
 	 * This message is sent for every message typed in the chat.
 	 * The message originates from the client who sent the message, and then is
 	 * broadcasted to all the other users.
-	 * Data: User who sent the message
 	 * Data: messageText contains the content of the message
 	 */
-	CHAT_MESSAGE(true, true, true),
+	CHAT_MESSAGE(true, false, true),
 	
 	/**
 	 * Sent by the client to the server when the client wants to disconnect from the server
@@ -40,7 +41,7 @@ public enum MessageType {
 	DISCONNECT_ACKNOWLEDGEMENT_MESSAGE(false, true);
 
 	/**
-	 * These booleans control who is allowed to send this kind of message
+	 * These booleans control who is allowed to be the originator of this kind of message
 	 */
 	public boolean canBeSentByClient;
 	public boolean canBeSentByServer;
@@ -59,6 +60,7 @@ public enum MessageType {
 	MessageType(boolean canBeSentByClient, boolean canBeSentByServer, boolean includesMessageTextString) {
 		this.canBeSentByClient = canBeSentByClient;
 		this.canBeSentByServer = canBeSentByServer;
+		this.includesMessageTextString = includesMessageTextString;
 	}
 	
 	

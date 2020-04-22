@@ -1,3 +1,8 @@
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -36,10 +41,17 @@ public class Message implements java.io.Serializable {
 	 */
 	private String messageText;
 	
+	/**
+	 * This field contains what type of message this is.
+	 */
+	private MessageType type;
+	
 	public Message(MessageType t, User originatingUser, String messageText) {
 		
 		// TODO: Make sure this is the correct date format
 		messageTimestamp = LocalDateTime.now(ZoneId.ofOffset("UTC", ZoneOffset.UTC));
+		
+		this.type = t;
 		
 		// Check to make sure that this message is being sent by a user (client or server) who
 		// is allowed to send this kind of message
@@ -56,8 +68,41 @@ public class Message implements java.io.Serializable {
 		if (!t.includesMessageTextString && messageText != null) {
 			throw new IllegalArgumentException("Message type " + t + "does not support the messageText parameter.");
 		}
+		this.messageText = messageText;
+		//TODO: Add secondary object data type.
 		
-		//TODO: Add secondary object data type. Test for serialization correctness.
+	}
+	
+	@Override
+	public String toString() {
+		return "Message from " + this.originatingUser + ". Type: " + this.type + 
+				((this.type.includesMessageTextString) ? " Message: " + this.messageText : "");
+	}
+	
+	// Test method to ensure that serialization works correctly.
+	public static void main(String[] args) throws IOException, ClassNotFoundException {
+		System.out.println("Initiating Message serialization test.");
+		User u1 = new User("Alice");
+		System.out.println(u1);
+		
+		Message m1 = new Message(MessageType.CHAT_MESSAGE, u1, "Hello world!");
+		
+		// Write m1 to a byte array. This is functionally equivalent to sending it over a socket.
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		ObjectOutputStream os = new ObjectOutputStream(bytes);
+		os.writeObject(m1);
+		byte[] userAsBytes = bytes.toByteArray();
+		os.close(); bytes.close();
+		
+		// Read m1 back from the array to m1_serial
+		ByteArrayInputStream bytes2 = new ByteArrayInputStream(userAsBytes);
+		ObjectInputStream is = new ObjectInputStream(bytes2);
+		Message m1_serial = (Message) is.readObject();
+		is.close(); bytes2.close();
+		
+		//Test to make sure the user wasn't mangled in any way.
+		System.out.println("Serialization test:");
+		System.out.println(m1 + " --> "  + m1_serial);
 		
 	}
 
