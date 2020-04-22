@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 
 /**
  * This class represents a single message passed between server and client.
@@ -42,11 +43,17 @@ public class Message implements java.io.Serializable {
 	private String messageText;
 	
 	/**
+	 * This field may contain objects relevant to the type of message being passed. This
+	 * is definitely bad design. 
+	 */
+	private Object[] messageDetails;
+	
+	/**
 	 * This field contains what type of message this is.
 	 */
 	private MessageType type;
 	
-	public Message(MessageType t, User originatingUser, String messageText) {
+	public Message(MessageType t, User originatingUser, String messageText, Object[] messageDetails) {
 		
 		// TODO: Make sure this is the correct date format
 		messageTimestamp = LocalDateTime.now(ZoneId.ofOffset("UTC", ZoneOffset.UTC));
@@ -71,6 +78,15 @@ public class Message implements java.io.Serializable {
 		this.messageText = messageText;
 		//TODO: Add secondary object data type.
 		
+		if (messageDetails == null) {
+			messageDetails = new Object[0];
+		}
+		if (messageDetails.length != t.messageDetailCount) {
+			throw new IllegalArgumentException("Message type " + t + "must be supplied with " + t.messageDetailCount + "details in the messageDetail array.");
+		}
+		this.messageDetails = messageDetails;
+		
+		
 	}
 	
 	@Override
@@ -85,7 +101,7 @@ public class Message implements java.io.Serializable {
 		User u1 = new User("Alice");
 		System.out.println(u1);
 		
-		Message m1 = new Message(MessageType.CHAT_MESSAGE, u1, "Hello world!");
+		Message m1 = new Message(MessageType.CHAT_MESSAGE, u1, "Hello world!", null);
 		
 		// Write m1 to a byte array. This is functionally equivalent to sending it over a socket.
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
