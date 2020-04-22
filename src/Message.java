@@ -29,7 +29,14 @@ public class Message implements java.io.Serializable {
 	 */
 	private User originatingUser;
 	
-	public Message(MessageType t, User originatingUser) {
+	/**
+	 * This field may contain some text relevant to whatever kind of message this is.
+	 * Or, it may not be allowed to contain anything. This is probably bad design, and
+	 * should be superseded if possible.
+	 */
+	private String messageText;
+	
+	public Message(MessageType t, User originatingUser, String messageText) {
 		
 		// TODO: Make sure this is the correct date format
 		messageTimestamp = LocalDateTime.now(ZoneId.ofOffset("UTC", ZoneOffset.UTC));
@@ -42,6 +49,16 @@ public class Message implements java.io.Serializable {
 		if (!t.canBeSentByServer && originatingUser.isServer()) {
 			throw new IllegalArgumentException("Cannot create messages with server as originator when the message type cannot be sent from server!");
 		}
+		
+		this.originatingUser = originatingUser;
+		
+		// Check to makes sure that there is only messageText if the type of message supports messageText
+		if (!t.includesMessageTextString && messageText != null) {
+			throw new IllegalArgumentException("Message type " + t + "does not support the messageText parameter.");
+		}
+		
+		//TODO: Add secondary object data type. Test for serialization correctness.
+		
 	}
 
 }

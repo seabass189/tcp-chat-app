@@ -3,9 +3,9 @@ public enum MessageType {
 
 	/**
 	 * Sent by the client to the server when the client wants to connect with the server
-	 * Data: Name of the user
+	 * Data: messageText contains Name of the user
 	 */
-	CONNECTION_REQUEST_MESSAGE(true, false),
+	CONNECTION_REQUEST_MESSAGE(true, false, true),
 	
 	/**
 	 * Sent by the server to the client when the server accepts the connection
@@ -25,9 +25,9 @@ public enum MessageType {
 	 * The message originates from the client who sent the message, and then is
 	 * broadcasted to all the other users.
 	 * Data: User who sent the message
-	 * Data: ** content of the message
+	 * Data: messageText contains the content of the message
 	 */
-	CHAT_MESSAGE(true, true),
+	CHAT_MESSAGE(true, true, true),
 	
 	/**
 	 * Sent by the client to the server when the client wants to disconnect from the server
@@ -39,10 +39,24 @@ public enum MessageType {
 	 */
 	DISCONNECT_ACKNOWLEDGEMENT_MESSAGE(false, true);
 
+	/**
+	 * These booleans control who is allowed to send this kind of message
+	 */
 	public boolean canBeSentByClient;
 	public boolean canBeSentByServer;
 	
-	MessageType(boolean canBeSentByClient, boolean canBeSentByServer) {
+	/**
+	 * This boolean controls whether this type of message uses the messageText String in message.
+	 * If false, then the string cannot be specified or get'ed from Message objects that use
+	 * this as our message type.
+	 */
+	public boolean includesMessageTextString;
+	
+	MessageType(boolean cC, boolean cS) {
+		this(cC, cS, false);
+	}
+	
+	MessageType(boolean canBeSentByClient, boolean canBeSentByServer, boolean includesMessageTextString) {
 		this.canBeSentByClient = canBeSentByClient;
 		this.canBeSentByServer = canBeSentByServer;
 	}
