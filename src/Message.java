@@ -1,4 +1,6 @@
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 /**
  * This class represents a single message passed between server and client.
@@ -18,14 +20,28 @@ public class Message implements java.io.Serializable {
 	private static final long serialVersionUID = 0L;
 	
 	/**
-	 * This field should contain the time that the message was created
+	 * This field should contain the time (in UTC) that the message was created
 	 */
 	private LocalDateTime messageTimestamp;
 	
-	public Message(MessageType t) {
+	/**
+	 * This field should contain the User of the client or server that created this message.
+	 */
+	private User originatingUser;
+	
+	public Message(MessageType t, User originatingUser) {
 		
+		// TODO: Make sure this is the correct date format
+		messageTimestamp = LocalDateTime.now(ZoneId.ofOffset("UTC", ZoneOffset.UTC));
 		
-		
+		// Check to make sure that this message is being sent by a user (client or server) who
+		// is allowed to send this kind of message
+		if (!t.canBeSentByClient && !originatingUser.isServer()) {
+			throw new IllegalArgumentException("Cannot create messages with client as originator when the message type cannot be sent from client!");
+		}
+		if (!t.canBeSentByServer && originatingUser.isServer()) {
+			throw new IllegalArgumentException("Cannot create messages with server as originator when the message type cannot be sent from server!");
+		}
 	}
 
 }

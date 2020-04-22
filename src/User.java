@@ -9,6 +9,9 @@ import java.io.ObjectOutputStream;
  * It includes information like the user's username, and a unique ID so we can distinguish
  * users from each other.
  * 
+ * The server also has a User, and it is stored as a constant value.
+ * This is somewhat confusing, so we might consider renaming User to something more accurate
+ * 
  */
 
 
