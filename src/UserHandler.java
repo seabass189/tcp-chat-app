@@ -54,7 +54,8 @@ public class UserHandler implements Runnable{
 	}
 
 	public void sendConnectionAck() {
-		Message ackMessage = new Message(MessageType.CONNECTION_ACKNOWLEDGEMENT_MESSAGE, User.SERVER, null, null);
+		Object[] details = {currentUserHandlers, user};
+		Message ackMessage = new Message(MessageType.CONNECTION_ACKNOWLEDGEMENT_MESSAGE, User.SERVER, null, details);
 		outgoingMessages.add(ackMessage);
 	}
 
@@ -64,7 +65,9 @@ public class UserHandler implements Runnable{
 	}
 
 	public void sendChatMessage(Message message){
-		outgoingMessages.add(message);
+		for (UserHandler userHandler : currentUserHandlers) {
+			userHandler.outgoingMessages.add(message);
+		}
 	}
 
 	public User getUser(){
@@ -108,6 +111,16 @@ public class UserHandler implements Runnable{
 	public void sendUserStatusChange(boolean joining) {
 		for (UserHandler userHandler : currentUserHandlers) {
 			userHandler.updateCurrentUsers(this, joining);
+			
+			Message statusMessage = null;
+			if(joining) {
+				Object[] details = {this, joining};
+				statusMessage = new Message(MessageType.USER_STATUS_CHANGE_MESSAGE, User.SERVER, null, details);
+			}else {
+				Object[] details = {this, joining};
+				statusMessage = new Message(MessageType.USER_STATUS_CHANGE_MESSAGE, this.user, null, details);
+			}
+			userHandler.outgoingMessages.add(statusMessage);
 		}
 	}
 

@@ -32,14 +32,15 @@ public class Server {
 	 * 
 	 */
 	private static ArrayList<UserHandler> currentUserHandlers = new ArrayList<UserHandler>();
-
+	
 	private static void addNewClient(Message message, Socket cSocket) {
+		User newUser = new User(message.getMessageText());
 		UserHandler newUH;
 		if (currentUserHandlers.size() < 1) {
-			newUH = new UserHandler(cSocket, message.getOriginatingUser(), new ArrayList<UserHandler>());
+			newUH = new UserHandler(cSocket, newUser, new ArrayList<UserHandler>());
 		} else {
 			UserHandler temp = currentUserHandlers.get(0);
-			newUH = new UserHandler(cSocket, message.getOriginatingUser(), temp.getCurrentUserHandlers());
+			newUH = new UserHandler(cSocket, newUser, temp.getCurrentUserHandlers());
 			currentUserHandlers.add(newUH);
 		}
 	}

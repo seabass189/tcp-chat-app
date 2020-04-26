@@ -29,13 +29,18 @@ public class User implements java.io.Serializable {
 	 * This field contains a hidden counter that is incremented each time a new user object is constructed.
 	 * The pre-increment value is assigned to the new user, thus ensuring that each user gets their own unique ID.
 	 */
-	private static int nextUserID = 0;
+	private static int nextUserID = -1;
+	
+	/**
+	 * This is the user that represents having no User.
+	 */
+	public static final User NO_USER = new User("NO USER");
 	
 	/**
 	 * This is the user that represents the server.
 	 */
 	public static final User SERVER = new User("SERVER");
-
+	
 	/**
 	 * This string contains the user's username. This should be used for display purposes only,
 	 * NOT to uniquely identify this user.
@@ -110,6 +115,7 @@ public class User implements java.io.Serializable {
 		User u2 = new User("Bob");
 		System.out.println(u1);
 		System.out.println(u2);
+		System.out.println(User.NO_USER);
 		System.out.println(User.SERVER);
 		System.out.println("Alice is Bob: " + u1.equals(u2));
 		System.out.println("Alice is Alice: " + u1.equals(u1));
