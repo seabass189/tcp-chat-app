@@ -1,0 +1,102 @@
+import java.io.*;
+import java.net.*;
+import java.text.*;
+import java.util.Date;
+
+public class Client implements Runnable
+{
+	private BufferedReader in;
+	private DataOutputStream toServer;
+	private DataInputStream fromServer;
+	private User self;
+	private Message message;
+	private Object[] details;
+	private boolean stop;
+	private String chat;
+	
+	public Client()
+	{
+		in = new BufferedReader(new InputStreamReader(System.in));
+		System.out.print("Enter host to connect to: ");
+		String host = in.readLine();
+		System.out.print("Enter port to connect to: ");
+		int port = Integer.parseInt(in.readLine());
+		InetAddress address = InetAddress.getByName(host);
+		Socket clientSocket = new Socket(address, port);
+		toServer = new DataOutputStream(clientSocket.getOutputStream());
+		fromServer = new DataInputStream(clientSocket.getInputStream());
+		System.out.print("Enter username: ");
+		String username = in.readLine();
+		self = new User(username);
+		message = new Message(MessageType.CONNECTION_REQUEST_MESSAGE, self, username, null);
+		toServer.write(message);
+		message = (Message)fromServer.read();
+		details = message.getMessageDetails();
+		self = details[1];
+		ArrayList<UserHandler> otherUsers = details[0];
+		for(int i = 0; i<otherUsers.size(); i++)
+		{
+			System.out.println(otherUsers.get(i).getUser().getUsername()+" is in the room");
+		}
+		stop = false;
+		Thread user = new Thread(this, "user");
+		Thread server = new Thread(this, "server");
+		while(!stop)
+		{
+			user.start();
+			server.start();
+		}
+	}
+	
+	public void run()
+	{
+		try
+		{
+			if(Thread.currentThread().getName().contentEquals("user"))
+			{
+				DateFormat format = new SimpleDateFormat("HH:mm");
+				Date date = new Date();
+				String text = self.getUsername()+" "+format.format(date)+": ";
+				text.concat(in.readLine());
+				if(!text.contentEquals("."))
+				{
+					message = new Message(MessageType.CHAT_MESSAGE, self, text, null);
+					toServer.write(message);
+				}
+				else
+				{
+					message = new Message(MessageType.DISCONNECT_REQUEST_MESSAGE, self, null, null);
+					toServer.write(message);
+					message = (Message)fromServer.read();
+					if(message.getType().equals(MessageType.DISCONNECT_REQUEST_MESSAGE))
+						stop = true;
+				}
+			}
+			else if(Thread.currentThread().getName().contentEquals("server"))
+			{
+				message = (Message)fromServer.read();
+				details = message.getMessageDetails();
+				if(message.getType().equals(MessageType.USER_STATUS_CHANGE_MESSAGE))
+				{
+					User temp = details[0];
+					if(details[1]=true)
+					{
+						System.out.println(temp.getUsername()+" has joined the room");
+					}
+					else
+					{
+						System.out.println(temp.getUsername()+" has left the room");
+					}
+				}
+				else if(message.getType().equals(MessageType.CHAT_MESSAGE))
+				{
+					System.out.println(message.getMessageText());
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			
+		}
+	}
+}
