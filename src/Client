@@ -17,14 +17,14 @@ public class Client implements Runnable
 	private BufferedReader in;
 	
 	/*
-	 * This field contains a DataOutputStream that will send Messages to the server
+	 * This field contains a ObjectOutputStream that will send Messages to the server
 	 */
-	private DataOutputStream toServer;
+	private ObjectOutputStream toServer;
 	
 	/*
-	 * This field contains a DataInputStream that will accept messages from the server
+	 * This field contains a ObjectInputStream that will accept messages from the server
 	 */
-	private DataInputStream fromServer;
+	private ObjectInputStream fromServer;
 	
 	/*
 	 * This field contains a User object that represents the client
@@ -63,8 +63,8 @@ public class Client implements Runnable
 		Socket clientSocket = new Socket(address, port);
 		
 		//Input and output streams are instantiated using the generated socket
-		toServer = new DataOutputStream(clientSocket.getOutputStream());
-		fromServer = new DataInputStream(clientSocket.getInputStream());
+		toServer = new ObjectOutputStream(clientSocket.getOutputStream());
+		fromServer = new ObjectInputStream(clientSocket.getInputStream());
 		
 		//Prompts the user for a username and creates a temporary User object
 		System.out.print("Enter username: ");
