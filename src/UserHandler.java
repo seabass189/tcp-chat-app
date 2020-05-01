@@ -22,23 +22,55 @@ public class UserHandler implements Runnable{
 	 */
 	private static final long serialVersionUID = 0L;
 
+	/**
+	 * This socket directly connects to the Client, and will be used to send messages to
+	 * and from Client and this UserHandler
+	 */
 	private Socket userSocket;
 
+	/**
+	 * This User represents the Client, and holds the Client's user name and userID
+	 */
 	private User user;
 
+	/**
+	 * This Thread will use the userSocket in order to listen and receive any incoming
+	 * messages from the Client
+	 */
 	private Thread listeningThread;
 
+	/**
+	 * This Thread will use the userSocket in order to send any outgoing
+	 * messages to the Client 
+	 */
 	private Thread sendingThread;
 
+	/**
+	 * This boolean is true when the Client is connected to the chat, and becomes false when
+	 * the Client disconnects
+	 */
 	private boolean bRun = true;
 
 	/**
-	 * 
+	 * This ArrayList holds all of the other UserHandlers in the group, and does
+	 * not include this UserHandler
 	 */
 	private ArrayList<UserHandler> currentUserHandlers = new ArrayList<UserHandler>();
 
+	/**
+	 * This Queue holds all outgoing messages that have not yet been sent. When a message
+	 * is sent, it will be removed from the front of the Queue
+	 */
 	private PriorityQueue<Message> outgoingMessages = new PriorityQueue<Message>();
 
+	/**
+	 * Constructor for a new UserHandler. Accepts the following parameters, and then initializes 
+	 * the listening and sending Threads. After, it will send the ConnectionAck back to the 
+	 * Client, and will let all other UserHandlers know that it has joined the chat
+	 * @param connectionSocket becomes userSocket
+	 * @param user becomes user
+	 * @param currentUsers becomes currentUserHandlers
+	 */
 	UserHandler(Socket connectionSocket, User user, ArrayList<UserHandler> currentUsers){
 		this.userSocket = connectionSocket;
 		this.user = user;
@@ -50,45 +82,77 @@ public class UserHandler implements Runnable{
 		sendingThread.start();
 
 		sendConnectionAck();
-		sendUserStatusChange(true);
+		sendConnUserStatus();
 	}
 
-	public void sendConnectionAck() {
+	/**
+	 * This function will create a new ConnectionAck message and send it to the Client
+	 * by adding it to the outgoingMessages queue
+	 */
+	private void sendConnectionAck() {
 		Object[] details = {currentUserHandlers, user};
 		Message ackMessage = new Message(MessageType.CONNECTION_ACKNOWLEDGEMENT_MESSAGE, User.SERVER, null, details);
-		outgoingMessages.add(ackMessage);
+		addToOutgoingMessages(ackMessage);
 	}
 
-	public void sendDisconnAck(){
+	/**
+	 * This function will create a new DisconnectionAck message and send it to the Client
+	 * by adding it to the outgoingMessages queue 
+	 */
+	private void sendDisconnAck(){
 		Message ackMessage = new Message(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE, User.SERVER, null, null);
 		outgoingMessages.add(ackMessage);
 	}
+	
+	/**
+	 * Message argument will be added to this outgoingMessages queue
+	 * @param message - message that is being added to this outgoingMessages queue
+	 */
+	public void addToOutgoingMessages(Message message) {
+		outgoingMessages.add(message);
+	}
 
-	public void sendChatMessage(Message message){
+	/**
+	 * Message is being forwarded to all other UserHandlers,
+	 * who will send the message to their own Clients
+	 * @param message - message that is being sent out to all other UserHandlers
+	 */
+	private void sendMessage(Message message){
 		for (UserHandler userHandler : currentUserHandlers) {
-			userHandler.outgoingMessages.add(message);
+			userHandler.addToOutgoingMessages(message);
 		}
 	}
 
+	/**
+	 * @return the user of this UserHandler
+	 */
 	public User getUser(){
 		return user;
 	}
 
 	/**
-	 * @return the currentUserHandlers
+	 * @return the currentUserHandlers arraylist
 	 */
 	public ArrayList<UserHandler> getCurrentUserHandlers() {
 		return currentUserHandlers;
 	}
 
+	/**
+	 * Messages received from Client are processed. Received messages should only be
+	 * of type CHAT_MESSAGE or DISCONNECT_REQUEST_MESSAGE
+	 * 
+	 * CHAT_MESSAGEs will be forwarded
+	 * DISCONNECT_REQUEST_MESSAGEs will start disconnect sequence
+	 * @param message - message from the Client that needs to be processed
+	 */
 	private void handleMessage(Message message) {
 		switch (message.getType()) {
 		case CHAT_MESSAGE:
-			sendChatMessage(message);
+			sendMessage(message);
 			break;
 		case DISCONNECT_REQUEST_MESSAGE:
 			sendDisconnAck();
-			sendUserStatusChange(false);
+			sendDisconnUserStatus();
 			stop();
 			break;
 		default:
@@ -96,33 +160,53 @@ public class UserHandler implements Runnable{
 		}
 	}
 
+	/**
+	 * Function to set boolean bRun to false, which will stop this UserHandler
+	 */
 	private void stop() {
 		bRun = false;
 	}
-
-	public void updateCurrentUsers(UserHandler changingUser, boolean joining) {
-		if (joining) {
-			currentUserHandlers.add(changingUser);
-		} else {
-			currentUserHandlers.remove(changingUser);
-		}
+	
+	/**
+	 * userHandler will be added to this currentUserHandlers list
+	 * @param addUserHandler
+	 */
+	public void addToCurrentUsers(UserHandler addUserHandler) {
+		currentUserHandlers.add(addUserHandler);
+	}
+	
+	/**
+	 * userHandler will be removed from this currentUserHandlers list
+	 * @param removeUserHandler
+	 */
+	public void removeFromCurrentUsers(UserHandler removeUserHandler) {
+		currentUserHandlers.remove(removeUserHandler);
 	}
 
-	public void sendUserStatusChange(boolean joining) {
+	/**
+	 * USER_STATUS_CHANGE_MESSAGE will be sent to every other UserHandler when a new UserHandler is created
+	 */
+	private void sendConnUserStatus(){
 		for (UserHandler userHandler : currentUserHandlers) {
-			userHandler.updateCurrentUsers(this, joining);
-			
-			Message statusMessage = null;
-			if(joining) {
-				Object[] details = {this, joining};
-				statusMessage = new Message(MessageType.USER_STATUS_CHANGE_MESSAGE, User.SERVER, null, details);
-			}else {
-				Object[] details = {this, joining};
-				statusMessage = new Message(MessageType.USER_STATUS_CHANGE_MESSAGE, this.user, null, details);
-			}
-			userHandler.outgoingMessages.add(statusMessage);
+			userHandler.addToCurrentUsers(this);
 		}
+			Object[] details = {this, true};
+			Message statusMessage = new Message(MessageType.USER_STATUS_CHANGE_MESSAGE, User.SERVER, null, details);
+			sendMessage(statusMessage);
 	}
+	
+	/**
+	 * USER_STATUS_CHANGE_MESSAGE will be sent to every other UserHandler when a UserHandler is disconnecting
+	 */
+	private void sendDisconnUserStatus(){
+		for (UserHandler userHandler : currentUserHandlers) {
+			userHandler.removeFromCurrentUsers(this);
+		}
+			Object[] details = {this, false};
+			Message statusMessage = new Message(MessageType.USER_STATUS_CHANGE_MESSAGE, User.SERVER, null, details);
+			sendMessage(statusMessage);
+	}
+
 
 	public void run(){
 		try {
@@ -147,6 +231,8 @@ public class UserHandler implements Runnable{
 			inFromClient.close(); outToClient.close();
 		} catch (Exception e) {
 			// TODO: handle exception
+			System.out.println("Exception caught");
+			e.printStackTrace();
 		}
 	}
 
