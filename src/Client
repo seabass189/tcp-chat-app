@@ -36,8 +36,6 @@ public class Client implements Runnable
 	 */
 	private boolean stop;
 	
-	private String chat;
-	
 	public Client()
 	{
 		//Instantiates the reader for user input
@@ -57,7 +55,7 @@ public class Client implements Runnable
 		
 		//Sends and receives connection messages and gets its identifier from the Server
 		//and also prints out the other users in the chat room
-		User self = this.connect();
+		User self = connect();
 		
 		//The boolean stop remains false until the program is ended
 		stop = false;
@@ -73,7 +71,11 @@ public class Client implements Runnable
 		server.start();
 	}
 	
-	public User connect()
+	//Sends a connection request message to the server to inform them. Receives an acknowledgement
+	//message and extracts a User objects and an ArrayList of UserHandlers. The User is used
+	//for further messages sent to the server. ArrayList is read through and printed to inform
+	//user of other people in the chat room.
+	private User connect()
 	{
 		//Prompts the user for a username and creates a temporary User object
 		System.out.print("Enter username: ");
@@ -82,10 +84,10 @@ public class Client implements Runnable
 				
 		//The User object is used to send a connection request Message to the server
 		Message connRequest = new Message(MessageType.CONNECTION_REQUEST_MESSAGE, temp, username, null);
-		toServer.write(connRequest);
+		toServer.writeObject(connRequest);
 				
 		//Upon acknowledgement the client extracts the data held in the message
-		Message connAck = (Message)fromServer.read();
+		Message connAck = (Message)fromServer.readObject();
 		Object[] details = connAck.getMessageDetails();
 				
 		//The client's User object is updated to match the User held in the server
@@ -105,67 +107,69 @@ public class Client implements Runnable
 	{
 		while(!stop)
 		{
-			try
+			//The user thread
+			if(Thread.currentThread().getName().contentEquals("user"))
 			{
-				//The user thread
-				if(Thread.currentThread().getName().contentEquals("user"))
-				{
-					this.userInput(self);
-				}
-				
-				//The server thread
-				else if(Thread.currentThread().getName().contentEquals("server"))
-				{
-					this.serverInput();
-				}
+				userInput(self);
 			}
-			catch(Exception e)
-			{
 				
+			//The server thread
+			else if(Thread.currentThread().getName().contentEquals("server"))
+			{
+				serverInput();
 			}
 		}
 	}
 	
-	public void userInput(User self)
+	//Responds to input from the user
+	private void userInput(User self)
 	{
 		//Reads the user's input
 		String text = in.readLine();
 		
-		//If the input is not the string "." then the client sends a message
-		if(!text.contentEquals("."))
+		if(text!=null)
 		{
-			this.sendMessage(self, text);
-		}
-		
-		//If the input is the string "." then the client goes through termination
-		//procedures
-		else
-		{
-			this.disconnect(self);
+			//If the input is not the string "." then the client sends a message
+			if(!text.contentEquals("."))
+			{
+				sendMessage(self, text);
+			}
+			
+			//If the input is the string "." then the client goes through termination
+			//procedures
+			else
+			{
+				disconnect(self);
+			}
 		}
 	}
 	
-	public void serverInput()
+	//Responds to incoming messages from the server
+	private void serverInput()
 	{
 		//Client captures the message received from the server and its data
-		Message received = (Message)fromServer.read();
-		Object[] details = received.getMessageDetails();
-		
-		//If the message's type is User Status Change
-		if(received.getType().equals(MessageType.USER_STATUS_CHANGE_MESSAGE))
+		Message received = (Message)fromServer.readObject();
+		if(received!=null)
 		{
-			this.statusChange(details);
-		}
-		
-		//If the message's type is Chat 
-		else if(received.getType().equals(MessageType.CHAT_MESSAGE))
-		{
-			//Prints out the message held in the Message object
-			System.out.println(received.getMessageText());
+			Object[] details = received.getMessageDetails();
+			
+			//If the message's type is User Status Change
+			if(received.getType().equals(MessageType.USER_STATUS_CHANGE_MESSAGE))
+			{
+				this.statusChange(details);
+			}
+			
+			//If the message's type is Chat 
+			else if(received.getType().equals(MessageType.CHAT_MESSAGE))
+			{
+				//Prints out the message held in the Message object
+				System.out.println(received.getMessageText());
+			}
 		}
 	}
 	
-	public void sendMessage(User self, String text)
+	//Sends a chat message from the user to the server
+	private void sendMessage(User self, String text)
 	{
 		//Formats the message before sending
 		DateFormat format = new SimpleDateFormat("HH:mm");
@@ -175,23 +179,25 @@ public class Client implements Runnable
 		
 		//Creates a new instance of the Message objects and sends it to the server
 		Message message = new Message(MessageType.CHAT_MESSAGE, self, timestamp, null);
-		toServer.write(message);
+		toServer.writeObject(message);
 	}
 	
-	public void disconnect(User self)
+	//Sends a disconnect request to the server and upon acknowledgement terminates the threads
+	private void disconnect(User self)
 	{
 		//Creates a disconnect request message and sends to server
 		Message request = new Message(MessageType.DISCONNECT_REQUEST_MESSAGE, self, null, null);
-		toServer.write(request);
+		toServer.writeObject(request);
 		
 		//Upon receiving a message and verifying the disconnect acknowledgement
 		//sets the variable stop to true and thus ends the while loop
-		Message ack = (Message)fromServer.read();
+		Message ack = (Message)fromServer.readObject();
 		if(ack.getType().equals(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE))
 			stop = true;
 	}
 	
-	public void statusChange(Object[] details)
+	//Prints a message reporting the change of a chat member's status
+	private void statusChange(Object[] details)
 	{
 		//Obtains the User object held in the message
 		//If true then the client tells the user that another person has joined
