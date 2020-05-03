@@ -65,6 +65,7 @@ public enum MessageType {
 	}
 	
 	MessageType(int messageDetailCount, boolean canBeSentByClient, boolean canBeSentByServer, boolean includesMessageTextString) {
+		this.messageDetailCount = messageDetailCount;
 		this.canBeSentByClient = canBeSentByClient;
 		this.canBeSentByServer = canBeSentByServer;
 		this.includesMessageTextString = includesMessageTextString;

@@ -82,7 +82,7 @@ public class Message implements java.io.Serializable {
 			messageDetails = new Object[0];
 		}
 		if (messageDetails.length != t.messageDetailCount) {
-			throw new IllegalArgumentException("Message type " + t + "must be supplied with " + t.messageDetailCount + "details in the messageDetail array.");
+			throw new IllegalArgumentException("Message type " + t + " must be supplied with " + t.messageDetailCount + " details in the messageDetail array.");
 		}
 		this.messageDetails = messageDetails;
 		
