@@ -23,7 +23,7 @@ public class Message implements java.io.Serializable {
 	 * 
 	 * Every time this class is modified, the UID should be incremented.
 	 */
-	private static final long serialVersionUID = 0L;
+	private static final long serialVersionUID = 1L;
 	
 	/**
 	 * This field should contain the time (in UTC) that the message was created
@@ -82,7 +82,7 @@ public class Message implements java.io.Serializable {
 			messageDetails = new Object[0];
 		}
 		if (messageDetails.length != t.messageDetailCount) {
-			throw new IllegalArgumentException("Message type " + t + "must be supplied with " + t.messageDetailCount + "details in the messageDetail array.");
+			throw new IllegalArgumentException("Message type " + t + " must be supplied with " + t.messageDetailCount + " details in the messageDetail array.");
 		}
 		this.messageDetails = messageDetails;
 		
@@ -120,6 +120,42 @@ public class Message implements java.io.Serializable {
 		System.out.println("Serialization test:");
 		System.out.println(m1 + " --> "  + m1_serial);
 		
+	}
+
+	/**
+	 * @return the originatingUser
+	 */
+	public User getOriginatingUser() {
+		return originatingUser;
+	}
+
+
+	/**
+	 * @return the type
+	 */
+	public MessageType getType() {
+		return type;
+	}
+
+	/**
+	 * @return the messageTimestamp
+	 */
+	public LocalDateTime getMessageTimestamp() {
+		return messageTimestamp;
+	}
+
+	/**
+	 * @return the messageText
+	 */
+	public String getMessageText() {
+		return messageText;
+	}
+
+	/**
+	 * @return the messageDetails
+	 */
+	public Object[] getMessageDetails() {
+		return messageDetails;
 	}
 
 }
