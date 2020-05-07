@@ -36,7 +36,7 @@ public class Client implements Runnable
 	 */
 	private boolean stop;
 	
-	public Client()
+	public Client() throws Exception
 	{
 		//Instantiates the reader for user input
 		in = new BufferedReader(new InputStreamReader(System.in));
@@ -75,24 +75,24 @@ public class Client implements Runnable
 	//message and extracts a User objects and an ArrayList of UserHandlers. The User is used
 	//for further messages sent to the server. ArrayList is read through and printed to inform
 	//user of other people in the chat room.
-	private User connect()
+	private User connect() throws Exception
 	{
 		//Prompts the user for a username and creates a temporary User object
 		System.out.print("Enter username: ");
 		String username = in.readLine();
 		User temp = new User(username);
-				
+
 		//The User object is used to send a connection request Message to the server
 		Message connRequest = new Message(MessageType.CONNECTION_REQUEST_MESSAGE, temp, username, null);
 		toServer.writeObject(connRequest);
-				
+
 		//Upon acknowledgement the client extracts the data held in the message
 		Message connAck = (Message)fromServer.readObject();
 		Object[] details = connAck.getMessageDetails();
-				
+
 		//The client's User object is updated to match the User held in the server
-		temp = details[1];
-				
+		temp = (User)details[1];
+
 		//The arraylist of UserHandlers is extracted and the client iterates through the list
 		//to inform the user of the other users currently present
 		ArrayList<UserHandler> otherUsers = (ArrayList<UserHandler>)details[0];
@@ -124,8 +124,17 @@ public class Client implements Runnable
 	//Responds to input from the user
 	private void userInput(User self)
 	{
-		//Reads the user's input
-		String text = in.readLine();
+		String text = null;
+		try
+		{
+			//Reads the user's input
+			text = in.readLine();
+		}
+		
+		catch(IOException e)
+		{
+			System.out.println(e.getMessage());
+		}
 		
 		if(text!=null)
 		{
@@ -148,7 +157,17 @@ public class Client implements Runnable
 	private void serverInput()
 	{
 		//Client captures the message received from the server and its data
-		Message received = (Message)fromServer.readObject();
+		Message received = null;
+		try
+		{
+			received = (Message)fromServer.readObject();
+		}
+		
+		catch(Exception e)
+		{
+			System.out.println(e.getMessage());
+		}
+		
 		if(received!=null)
 		{
 			Object[] details = received.getMessageDetails();
@@ -179,21 +198,35 @@ public class Client implements Runnable
 		
 		//Creates a new instance of the Message objects and sends it to the server
 		Message message = new Message(MessageType.CHAT_MESSAGE, self, timestamp, null);
-		toServer.writeObject(message);
+		try 
+		{
+			toServer.writeObject(message);
+		} 
+		catch (Exception e) 
+		{
+			System.out.println(e.getMessage());
+		}
 	}
 	
 	//Sends a disconnect request to the server and upon acknowledgement terminates the threads
 	private void disconnect(User self)
 	{
-		//Creates a disconnect request message and sends to server
-		Message request = new Message(MessageType.DISCONNECT_REQUEST_MESSAGE, self, null, null);
-		toServer.writeObject(request);
-		
-		//Upon receiving a message and verifying the disconnect acknowledgement
-		//sets the variable stop to true and thus ends the while loop
-		Message ack = (Message)fromServer.readObject();
-		if(ack.getType().equals(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE))
-			stop = true;
+		try
+		{
+			//Creates a disconnect request message and sends to server
+			Message request = new Message(MessageType.DISCONNECT_REQUEST_MESSAGE, self, null, null);
+			toServer.writeObject(request);
+
+			//Upon receiving a message and verifying the disconnect acknowledgement
+			//sets the variable stop to true and thus ends the while loop
+			Message ack = (Message)fromServer.readObject();
+			if(ack.getType().equals(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE))
+				stop = true;
+		}
+		catch(Exception e)
+		{
+			System.out.println(e.getMessage());
+		}
 	}
 	
 	//Prints a message reporting the change of a chat member's status
