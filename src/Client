@@ -36,39 +36,46 @@ public class Client implements Runnable
 	 */
 	private boolean stop;
 	
-	public Client() throws Exception
+	public Client()
 	{
-		//Instantiates the reader for user input
-		in = new BufferedReader(new InputStreamReader(System.in));
-		
-		//Prompts the user for host's name and port number to create a socket
-		System.out.print("Enter host to connect to: ");
-		String host = in.readLine();
-		System.out.print("Enter port to connect to: ");
-		int port = Integer.parseInt(in.readLine());
-		InetAddress address = InetAddress.getByName(host);
-		Socket clientSocket = new Socket(address, port);
-		
-		//Input and output streams are instantiated using the generated socket
-		toServer = new ObjectOutputStream(clientSocket.getOutputStream());
-		fromServer = new ObjectInputStream(clientSocket.getInputStream());
-		
-		//Sends and receives connection messages and gets its identifier from the Server
-		//and also prints out the other users in the chat room
-		User self = connect();
-		
-		//The boolean stop remains false until the program is ended
-		stop = false;
-		
-		//Two threads are generated with the user thread designed to listen for user input
-		//while the server thread waits for messages from the server
-		Thread user = new Thread(this, "user");
-		Thread server = new Thread(this, "server");
-		
-		//The threads continue listening for input until the variable stop is changed
-		//and ends the while loop
-		user.start();
-		server.start();
+		try
+		{
+			//Instantiates the reader for user input
+			in = new BufferedReader(new InputStreamReader(System.in));
+
+			//Prompts the user for host's name and port number to create a socket
+			System.out.print("Enter host to connect to: ");
+			String host = in.readLine();
+			System.out.print("Enter port to connect to: ");
+			int port = Integer.parseInt(in.readLine());
+			InetAddress address = InetAddress.getByName(host);
+			Socket clientSocket = new Socket(address, port);
+
+			//Input and output streams are instantiated using the generated socket
+			toServer = new ObjectOutputStream(clientSocket.getOutputStream());
+			fromServer = new ObjectInputStream(clientSocket.getInputStream());
+
+			//Sends and receives connection messages and gets its identifier from the Server
+			//and also prints out the other users in the chat room
+			User self = connect();
+
+			//The boolean stop remains false until the program is ended
+			stop = false;
+
+			//Two threads are generated with the user thread designed to listen for user input
+			//while the server thread waits for messages from the server
+			Thread user = new Thread(this, "user");
+			Thread server = new Thread(this, "server");
+
+			//The threads continue listening for input until the variable stop is changed
+			//and ends the while loop
+			user.start();
+			server.start();
+		}
+		catch(Exception e)
+		{
+			System.out.println(e.getMessage());
+		}
 	}
 	
 	//Sends a connection request message to the server to inform them. Receives an acknowledgement
@@ -244,5 +251,10 @@ public class Client implements Runnable
 		{
 			System.out.println(temp.getUsername()+" has left the room");
 		}
+	}
+	
+	public static void main(String[] args)
+	{
+		Client client = new Client();
 	}
 }
