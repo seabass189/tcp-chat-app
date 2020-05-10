@@ -24,7 +24,7 @@ public class Message implements java.io.Serializable {
 	 * 
 	 * Every time this class is modified, the UID should be incremented.
 	 */
-	private static final long serialVersionUID = 0L;
+	private static final long serialVersionUID = 2L;
 	
 	/**
 	 * This field should contain the time (in UTC) that the message was created
@@ -77,15 +77,10 @@ public class Message implements java.io.Serializable {
 			throw new IllegalArgumentException("Message type " + t + "does not support the messageText parameter.");
 		}
 		this.messageText = messageText;
-		//TODO: Add secondary object data type.
 		
 		if (messageDetails == null) {
 			messageDetails = new Object[0];
 		}
-<<<<<<< Updated upstream
-		if (messageDetails.length != t.messageDetailCount) {
-			throw new IllegalArgumentException("Message type " + t + "must be supplied with " + t.messageDetailCount + "details in the messageDetail array.");
-=======
 		if (messageDetails.length != t.messageDetailTypes.length) {
 			throw new IllegalArgumentException("Message type " + t + " must be supplied with " + t.messageDetailTypes.length + " details in the messageDetail array.");
 		}
@@ -95,7 +90,6 @@ public class Message implements java.io.Serializable {
 				throw new IllegalArgumentException("Message type " + t + " was supplied with"
 						+ " detail #" + i + " as " + messageDetails[i].toString() + " when it was expecting an object of type " + t.messageDetailTypes[i] + ".");
 			}
->>>>>>> Stashed changes
 		}
 		this.messageDetails = messageDetails;
 		
@@ -147,6 +141,42 @@ public class Message implements java.io.Serializable {
 		}
 		
 		
+	}
+	
+	/**
+	 * @return the originatingUser
+	 */
+	public User getOriginatingUser() {
+		return originatingUser;
+	}
+
+
+	/**
+	 * @return the type
+	 */
+	public MessageType getType() {
+		return type;
+	}
+
+	/**
+	 * @return the messageTimestamp
+	 */
+	public LocalDateTime getMessageTimestamp() {
+		return messageTimestamp;
+	}
+
+	/**
+	 * @return the messageText
+	 */
+	public String getMessageText() {
+		return messageText;
+	}
+
+	/**
+	 * @return the messageDetails
+	 */
+	public Object[] getMessageDetails() {
+		return messageDetails;
 	}
 
 }

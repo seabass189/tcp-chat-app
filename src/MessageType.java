@@ -64,13 +64,8 @@ public enum MessageType {
 	MessageType(boolean cC, boolean cS) {
 		this(cC, cS, new Class[0], false);
 	}
-	
-<<<<<<< Updated upstream
-	MessageType(int messageDetailCount, boolean canBeSentByClient, boolean canBeSentByServer, boolean includesMessageTextString) {
-=======
 	MessageType(boolean canBeSentByClient, boolean canBeSentByServer, Class[] messageDetailTypes, boolean includesMessageTextString) {
 		this.messageDetailTypes = messageDetailTypes;
->>>>>>> Stashed changes
 		this.canBeSentByClient = canBeSentByClient;
 		this.canBeSentByServer = canBeSentByServer;
 		this.includesMessageTextString = includesMessageTextString;
