@@ -12,6 +12,11 @@ import java.util.*;
 public class Client implements Runnable
 {
 	/*
+	 * This field contains the socket that connects to the Server
+	 */
+	private Socket clientSocket;
+	
+	/*
 	 * This field contains a BufferedReader that will accept the user's input
 	 */
 	private BufferedReader in;
@@ -53,7 +58,6 @@ public class Client implements Runnable
 
 			//Input and output streams are instantiated using the generated socket
 			toServer = new ObjectOutputStream(clientSocket.getOutputStream());
-			fromServer = new ObjectInputStream(clientSocket.getInputStream());
 
 			//Sends and receives connection messages and gets its identifier from the Server
 			//and also prints out the other users in the chat room
@@ -94,7 +98,9 @@ public class Client implements Runnable
 		toServer.writeObject(connRequest);
 
 		//Upon acknowledgement the client extracts the data held in the message
+		fromServer = new ObjectInputStream(clientSocket.getInputStream());
 		Message connAck = (Message)fromServer.readObject();
+		fromServer.close();
 		Object[] details = connAck.getMessageDetails();
 
 		//The client's User object is updated to match the User held in the server
@@ -167,7 +173,9 @@ public class Client implements Runnable
 		Message received = null;
 		try
 		{
+			fromServer = new ObjectInputStream(clientSocket.getInputStream());
 			received = (Message)fromServer.readObject();
+			fromServer.close();
 		}
 		
 		catch(Exception e)
@@ -226,7 +234,9 @@ public class Client implements Runnable
 
 			//Upon receiving a message and verifying the disconnect acknowledgement
 			//sets the variable stop to true and thus ends the while loop
+			fromServer = new ObjectInputStream(clientSocket.getInputStream());
 			Message ack = (Message)fromServer.readObject();
+			fromServer.close();
 			if(ack.getType().equals(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE))
 				stop = true;
 		}
