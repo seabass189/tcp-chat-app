@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 
 public enum MessageType {
 
@@ -5,15 +6,14 @@ public enum MessageType {
 	 * Sent by the client to the server when the client wants to connect with the server
 	 * Data: messageText contains Name of the user
 	 */
-	//TODO: is the originating user of this type of message supposed to be null?
-	CONNECTION_REQUEST_MESSAGE(0, true, false, true),
+	CONNECTION_REQUEST_MESSAGE(true, false, new Class[0], true),
 	
 	/**
 	 * Sent by the server to the client when the server accepts the connection
 	 * Data: [0] A list of all currently connected users
 	 * Data: [1] The client's User object
 	 */
-	CONNECTION_ACKNOWLEDGEMENT_MESSAGE(2, false, true),
+	CONNECTION_ACKNOWLEDGEMENT_MESSAGE(false, true, new Class[]{ArrayList.class, User.class}, false),
 	
 	/**
 	 * Whenever a user connects or disconnects, this message is sent to all of the
@@ -21,7 +21,7 @@ public enum MessageType {
 	 * Data: [0] The User Object of the user
 	 * Data: [1] A Boolean: True if they joined the server, false otherwise
 	 */
-	USER_STATUS_CHANGE_MESSAGE(2, true, true),
+	USER_STATUS_CHANGE_MESSAGE(true, true, new Class[]{User.class, Boolean.class}, false),
 	
 	/**
 	 * This message is sent for every message typed in the chat.
@@ -29,17 +29,17 @@ public enum MessageType {
 	 * broadcasted to all the other users.
 	 * Data: messageText contains the content of the message
 	 */
-	CHAT_MESSAGE(0, true, false, true),
+	CHAT_MESSAGE(true, false, new Class[0], true),
 	
 	/**
 	 * Sent by the client to the server when the client wants to disconnect from the server
 	 */
-	DISCONNECT_REQUEST_MESSAGE(0, true, false),
+	DISCONNECT_REQUEST_MESSAGE(true, false),
 	
 	/**
 	 * Sent by the server to the client when the server accepts the user's disconnection
 	 */
-	DISCONNECT_ACKNOWLEDGEMENT_MESSAGE(0, false, true);
+	DISCONNECT_ACKNOWLEDGEMENT_MESSAGE(false, true);
 
 	/**
 	 * These booleans control who is allowed to be the originator of this kind of message
@@ -55,17 +55,17 @@ public enum MessageType {
 	public boolean includesMessageTextString;
 	
 	/**
-	 * This int controls the number of objects that are required to be in the message detail
-	 * array. This is bad design, and should be replaced.
+	 * This array of Class controls both the number and types of objects that 
+	 * are required to be in the message detail array. This is bad design.
 	 */
-	public int messageDetailCount;
+	@SuppressWarnings("rawtypes")
+	public Class[] messageDetailTypes;
 	
-	MessageType(int mDC, boolean cC, boolean cS) {
-		this(mDC, cC, cS, false);
+	MessageType(boolean cC, boolean cS) {
+		this(cC, cS, new Class[0], false);
 	}
-	
-	MessageType(int messageDetailCount, boolean canBeSentByClient, boolean canBeSentByServer, boolean includesMessageTextString) {
-		this.messageDetailCount = messageDetailCount;
+	MessageType(boolean canBeSentByClient, boolean canBeSentByServer, Class[] messageDetailTypes, boolean includesMessageTextString) {
+		this.messageDetailTypes = messageDetailTypes;
 		this.canBeSentByClient = canBeSentByClient;
 		this.canBeSentByServer = canBeSentByServer;
 		this.includesMessageTextString = includesMessageTextString;
