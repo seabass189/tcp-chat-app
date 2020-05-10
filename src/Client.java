@@ -175,6 +175,7 @@ public class Client implements Runnable
 		//Client captures the message received from the server and its data
 		Message received = null;
 		try
+		{
 //			fromServer = new ObjectInputStream(clientSocket.getInputStream());
 			received = (Message)fromServer.readObject();
 //			fromServer.close();
