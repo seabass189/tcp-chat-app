@@ -77,7 +77,7 @@ public class Client implements Runnable
 			user.start();
 			server.start();
 		}
-		catch(Exception e)
+		catch(IOException e)
 		{
 			e.printStackTrace();
 		}
@@ -87,37 +87,48 @@ public class Client implements Runnable
 	//message and extracts a User objects and an ArrayList of UserHandlers. The User is used
 	//for further messages sent to the server. ArrayList is read through and printed to inform
 	//user of other people in the chat room.
-	private User connect() throws Exception
+	private User connect()
 	{
 		//Prompts the user for a username and creates a temporary User object
 		System.out.print("Enter username: ");
-		String username = in.readLine();
-		User temp = new User(username);
+		String username;
+		try {
+			username = in.readLine();
+			User temp = new User(username);
 
-		//Upon acknowledgement the client extracts the data held in the message
-		toServer = new ObjectOutputStream(clientSocket.getOutputStream());
+			//Upon acknowledgement the client extracts the data held in the message
+			toServer = new ObjectOutputStream(clientSocket.getOutputStream());
 
-		//The User object is used to send a connection request Message to the server
-		Message connRequest = new Message(MessageType.CONNECTION_REQUEST_MESSAGE, temp, username, null);
-		toServer.writeObject(connRequest);
+			//The User object is used to send a connection request Message to the server
+			Message connRequest = new Message(MessageType.CONNECTION_REQUEST_MESSAGE, temp, username, null);
+			toServer.writeObject(connRequest);
 
-		fromServer = new ObjectInputStream(clientSocket.getInputStream());
-		Message connAck = (Message)fromServer.readObject();
-//		fromServer.close();
-		Object[] details = connAck.getMessageDetails();
+			fromServer = new ObjectInputStream(clientSocket.getInputStream());
+			Message connAck = (Message)fromServer.readObject();
+//			fromServer.close();
+			Object[] details = connAck.getMessageDetails();
 
-		//The client's User object is updated to match the User held in the server
-		temp = (User)details[1];
+			//The client's User object is updated to match the User held in the server
+			temp = (User)details[1];
 
-		//The arraylist of UserHandlers is extracted and the client iterates through the list
-		//to inform the user of the other users currently present
-		@SuppressWarnings("unchecked")
-		ArrayList<User> otherUsers = (ArrayList<User>)details[0];
-		for(int i = 0; i<otherUsers.size(); i++)
-		{
-			System.out.println(otherUsers.get(i).getUsername()+" is in the room");
+			//The arraylist of UserHandlers is extracted and the client iterates through the list
+			//to inform the user of the other users currently present
+			@SuppressWarnings("unchecked")
+			ArrayList<User> otherUsers = (ArrayList<User>)details[0];
+			for(int i = 0; i<otherUsers.size(); i++)
+			{
+				System.out.println(otherUsers.get(i).getUsername()+" is in the room");
+			}
+			return temp;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
-		return temp;
+		return null;
+		
 	}
 	
 	public void run()
@@ -175,16 +186,12 @@ public class Client implements Runnable
 	{
 		//Client captures the message received from the server and its data
 		Message received = null;
-		try
-		{
-//			fromServer = new ObjectInputStream(clientSocket.getInputStream());
+
+		try {
 			received = (Message)fromServer.readObject();
-//			fromServer.close();
-		}
-		
-		catch(Exception e)
-		{
-			System.out.println(e.getMessage());
+		} catch (ClassNotFoundException | IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 		
 		if(received!=null)
@@ -217,40 +224,42 @@ public class Client implements Runnable
 		
 		//Creates a new instance of the Message objects and sends it to the server
 		Message message = new Message(MessageType.CHAT_MESSAGE, self, timestamp, null);
-		try 
-		{
+		try {
 			toServer.writeObject(message);
-		} 
-		catch (Exception e) 
-		{
-			e.printStackTrace();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
 		}
 	}
 	
 	//Sends a disconnect request to the server and upon acknowledgement terminates the threads
 	private void disconnect(User self)
 	{
-		try
-		{
-			//Creates a disconnect request message and sends to server
-			Message request = new Message(MessageType.DISCONNECT_REQUEST_MESSAGE, self, null, null);
+		//Creates a disconnect request message and sends to server
+		Message request = new Message(MessageType.DISCONNECT_REQUEST_MESSAGE, self, null, null);
+		try {
 			toServer.writeObject(request);
-
 			//Upon receiving a message and verifying the disconnect acknowledgement
 			//sets the variable stop to true and thus ends the while loop
-//			fromServer = new ObjectInputStream(clientSocket.getInputStream());
+//				fromServer = new ObjectInputStream(clientSocket.getInputStream());
 			Message ack = (Message)fromServer.readObject();
-//			fromServer.close();
-			if(ack.getType().equals(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE))
-			{
-				stop = true;
-				fromServer.close();
-			}
-		}
-		catch(Exception e)
-		{
+				//			fromServer.close();
+				if(ack.getType().equals(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE))
+				{
+					stop = true;
+					fromServer.close();
+				}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
+
+
+
 	}
 	
 	//Prints a message reporting the change of a chat member's status
