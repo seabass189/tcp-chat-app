@@ -79,7 +79,7 @@ public class Client implements Runnable
 		}
 		catch(Exception e)
 		{
-			System.out.println(e.getMessage());
+			e.printStackTrace();
 		}
 	}
 	
@@ -94,12 +94,13 @@ public class Client implements Runnable
 		String username = in.readLine();
 		User temp = new User(username);
 
+		//Upon acknowledgement the client extracts the data held in the message
+		toServer = new ObjectOutputStream(clientSocket.getOutputStream());
+
 		//The User object is used to send a connection request Message to the server
 		Message connRequest = new Message(MessageType.CONNECTION_REQUEST_MESSAGE, temp, username, null);
 		toServer.writeObject(connRequest);
 
-		//Upon acknowledgement the client extracts the data held in the message
-		toServer = new ObjectOutputStream(clientSocket.getOutputStream());
 		fromServer = new ObjectInputStream(clientSocket.getInputStream());
 		Message connAck = (Message)fromServer.readObject();
 //		fromServer.close();
@@ -222,7 +223,7 @@ public class Client implements Runnable
 		} 
 		catch (Exception e) 
 		{
-			System.out.println(e.getMessage());
+			e.printStackTrace();
 		}
 	}
 	
@@ -248,7 +249,7 @@ public class Client implements Runnable
 		}
 		catch(Exception e)
 		{
-			System.out.println(e.getMessage());
+			e.printStackTrace();
 		}
 	}
 	
