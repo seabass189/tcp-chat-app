@@ -81,11 +81,10 @@ public class Server {
 	 * @param message
 	 * @param cSocket
 	 */
-	private static void addNewClient(Message message, Socket cSocket) {
+	private static void addNewClient(Message message, Socket cSocket, ObjectInputStream inFromClient) {
 		User newUser = new User(message.getMessageText());
 		UserHandler newUH;
 		try {
-			ObjectInputStream inFromClient = new ObjectInputStream(cSocket.getInputStream());
 			ObjectOutputStream outToClient = new ObjectOutputStream(cSocket.getOutputStream());
 			newUH = new UserHandler(inFromClient, outToClient, newUser);
 			addToCurrentUserHandlers(newUH);
@@ -108,7 +107,14 @@ public class Server {
 		incomingConnectionRequests.add(testTwo);
 		incomingConnectionRequests.add(testThree);
 		for (Message message : incomingConnectionRequests) {
-			addNewClient(message, socket);
+			ObjectInputStream inFromClient;
+			try {
+				inFromClient = new ObjectInputStream(socket.getInputStream()); //TODO make sure this fix works
+				addNewClient(message, socket, inFromClient); 
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} 
 		}
 		System.out.println("Current UserHandler List:");
 		for (UserHandler userHandler : currentUserHandlers) {
@@ -129,16 +135,16 @@ public class Server {
 				InetAddress IP = InetAddress. getLocalHost();
 				System.out.println("Waiting on port: " + listeningPort + " with IP address: " + IP.getHostAddress());
 				welcomeSocket = new ServerSocket(listeningPort);
-				ObjectInputStream inFromClient = null;
 				while (true) {
 					Socket cSocket = welcomeSocket.accept();
-					inFromClient = new ObjectInputStream(cSocket.getInputStream());
+					ObjectInputStream inFromClient = new ObjectInputStream(cSocket.getInputStream());
 					Message message;
 					message = (Message) inFromClient.readObject();
 					if (message.getType() == MessageType.CONNECTION_REQUEST_MESSAGE) {
 						System.out.println("Connection message received: " + message);
-						addNewClient(message, cSocket);
+						addNewClient(message, cSocket, inFromClient);
 					}else {
+						// TODO don't crash the server because a client messed up, tell the client and go on
 						throw new IllegalArgumentException("Server received a message that was not of type CONNECTION_REQUEST_MESSAGE.");
 					}
 				}
