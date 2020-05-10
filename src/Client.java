@@ -252,9 +252,11 @@ public class Client implements Runnable
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			stop = true; //If this goes bad, then we really abort hard
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			stop = true; //If this goes bad, then we really abort hard
 		}
 
 
