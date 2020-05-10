@@ -3,6 +3,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -23,7 +24,7 @@ public class Message implements java.io.Serializable {
 	 * 
 	 * Every time this class is modified, the UID should be incremented.
 	 */
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 0L;
 	
 	/**
 	 * This field should contain the time (in UTC) that the message was created
@@ -81,8 +82,20 @@ public class Message implements java.io.Serializable {
 		if (messageDetails == null) {
 			messageDetails = new Object[0];
 		}
+<<<<<<< Updated upstream
 		if (messageDetails.length != t.messageDetailCount) {
-			throw new IllegalArgumentException("Message type " + t + " must be supplied with " + t.messageDetailCount + " details in the messageDetail array.");
+			throw new IllegalArgumentException("Message type " + t + "must be supplied with " + t.messageDetailCount + "details in the messageDetail array.");
+=======
+		if (messageDetails.length != t.messageDetailTypes.length) {
+			throw new IllegalArgumentException("Message type " + t + " must be supplied with " + t.messageDetailTypes.length + " details in the messageDetail array.");
+		}
+		// Make sure that everything we put in this list is of the right class.
+		for (int i = 0; i < messageDetails.length; i++) {
+			if (!(t.messageDetailTypes[i].isInstance(messageDetails[i]))) {
+				throw new IllegalArgumentException("Message type " + t + " was supplied with"
+						+ " detail #" + i + " as " + messageDetails[i].toString() + " when it was expecting an object of type " + t.messageDetailTypes[i] + ".");
+			}
+>>>>>>> Stashed changes
 		}
 		this.messageDetails = messageDetails;
 		
@@ -101,61 +114,39 @@ public class Message implements java.io.Serializable {
 		User u1 = new User("Alice");
 		System.out.println(u1);
 		
-		Message m1 = new Message(MessageType.CHAT_MESSAGE, u1, "Hello world!", null);
+		Message[] inp = new Message[] {
+				new Message(MessageType.CHAT_MESSAGE, u1, "Hello world!", null),
+				new Message(MessageType.CONNECTION_ACKNOWLEDGEMENT_MESSAGE, User.SERVER, null, new Object[] {new ArrayList<User>(), u1}),
+				new Message(MessageType.USER_STATUS_CHANGE_MESSAGE, User.SERVER, null, new Object[] {u1, true}),
+				new Message(MessageType.USER_STATUS_CHANGE_MESSAGE, User.SERVER, null, new Object[] {u1, false}),
+				new Message(MessageType.DISCONNECT_REQUEST_MESSAGE, u1, null, null),
+				new Message(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE, User.SERVER, null, null),
+				
+		};
 		
-		// Write m1 to a byte array. This is functionally equivalent to sending it over a socket.
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		ObjectOutputStream os = new ObjectOutputStream(bytes);
-		os.writeObject(m1);
-		byte[] userAsBytes = bytes.toByteArray();
-		os.close(); bytes.close();
 		
-		// Read m1 back from the array to m1_serial
-		ByteArrayInputStream bytes2 = new ByteArrayInputStream(userAsBytes);
-		ObjectInputStream is = new ObjectInputStream(bytes2);
-		Message m1_serial = (Message) is.readObject();
-		is.close(); bytes2.close();
-		
-		//Test to make sure the user wasn't mangled in any way.
+
 		System.out.println("Serialization test:");
-		System.out.println(m1 + " --> "  + m1_serial);
+		for (int i = 0; i < inp.length; i++) {
+			Message m1 = inp[i];
+			// Write m1 to a byte array. This is functionally equivalent to sending it over a socket.
+			ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+			ObjectOutputStream os = new ObjectOutputStream(bytes);
+			os.writeObject(m1);
+			byte[] userAsBytes = bytes.toByteArray();
+			os.close(); bytes.close();
+			
+			// Read m1 back from the array to m1_serial
+			ByteArrayInputStream bytes2 = new ByteArrayInputStream(userAsBytes);
+			ObjectInputStream is = new ObjectInputStream(bytes2);
+			Message m1_serial = (Message) is.readObject();
+			is.close(); bytes2.close();
+			
+			//Test to make sure the user wasn't mangled in any way.
+			System.out.println(m1 + " --> "  + m1_serial);
+		}
 		
-	}
-
-	/**
-	 * @return the originatingUser
-	 */
-	public User getOriginatingUser() {
-		return originatingUser;
-	}
-
-
-	/**
-	 * @return the type
-	 */
-	public MessageType getType() {
-		return type;
-	}
-
-	/**
-	 * @return the messageTimestamp
-	 */
-	public LocalDateTime getMessageTimestamp() {
-		return messageTimestamp;
-	}
-
-	/**
-	 * @return the messageText
-	 */
-	public String getMessageText() {
-		return messageText;
-	}
-
-	/**
-	 * @return the messageDetails
-	 */
-	public Object[] getMessageDetails() {
-		return messageDetails;
+		
 	}
 
 }
