@@ -1,6 +1,8 @@
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -13,7 +15,7 @@ import java.util.Queue;
  * @author Sebastian Hernandez and Nowndale Sale
  *
  */
-public class UserHandler implements Runnable{
+public class UserHandler {
 
 	/**
 	 * This field represents a version of this class, so we don't accidentally try to load
@@ -36,7 +38,11 @@ public class UserHandler implements Runnable{
 	 * This socket directly connects to the Client, and will be used to send messages to
 	 * and from Client and this UserHandler
 	 */
-	private Socket userSocket;
+//	private Socket userSocket;
+	
+	private ObjectInputStream inFromClient;
+	
+	private ObjectOutputStream outToClient;
 
 	/**
 	 * This User represents the Client, and holds the Client's user name and userID
@@ -86,19 +92,69 @@ public class UserHandler implements Runnable{
 	 * @param user becomes user
 	 * @param currentUsers becomes currentUserHandlers
 	 */
-	UserHandler(Socket connectionSocket, User user){
-		this.userSocket = connectionSocket;
+	UserHandler(ObjectInputStream in, ObjectOutputStream out, User user){
+		this.inFromClient = in;
+		this.outToClient = out;
 		this.user = user;
 
 		if(!TEST) {
-			System.out.println("This is not happening");
-			listeningThread= new Thread(this, "listen");//create a thread
+			System.out.println("NOT A TEST");
+//			listeningThread= new Thread(this, "listen");//create a thread
+			listeningThread = new Thread(new Runnable()
+			{
+				@Override
+				public void run() {
+					System.out.println("In listen thread");
+					Message message;
+					try {
+						while ((message = (Message) inFromClient.readObject()) != null && bRun!=false) {
+							System.out.println("Message received: " + message);
+							addToIncomingMessages(message);
+						}
+						inFromClient.close();
+					} catch (ClassNotFoundException | IOException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+			
+			sendingThread = new Thread(new Runnable()
+			{
+				@Override
+				public void run() {
+					System.out.println("In send thread");
+					try {
+						while(bRun != false) {
+							Message sendingMessage = outgoingMessages.poll();
+							if (sendingMessage != null) {
+								outToClient.writeObject(sendingMessage);
+							}
+						}
+						outToClient.close();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}	
+				}
+			});
+			
 			listeningThread.start(); //start the thread
-			sendingThread = new Thread(this, "send");
 			sendingThread.start();
 		}
-		processingThread = new Thread(this, "process");
+		processingThread = new Thread(new Runnable()
+		{
+			@Override
+			public void run() {
+				while(bRun != false) {
+					Message incomingMessage = incomingMessages.poll();
+					if (incomingMessage != null) {
+						handleMessage(incomingMessage);
+					}
+				}	
+			}
+		});
 		processingThread.start();
+		
+		System.out.println("Threads created");
 
 		sendConnectionAck();
 		sendConnUserStatus();
@@ -109,9 +165,18 @@ public class UserHandler implements Runnable{
 	 * by adding it to the outgoingMessages queue
 	 */
 	private void sendConnectionAck() {
-		Object[] details = {Server.getCurrentUserHandlers(), user};
+		Object[] details = {getUserList(Server.getCurrentUserHandlers()), user};
 		Message ackMessage = new Message(MessageType.CONNECTION_ACKNOWLEDGEMENT_MESSAGE, User.SERVER, null, details);
+		System.out.println("CONN_ACK: " + ackMessage);
 		addToOutgoingMessages(ackMessage);
+	}
+	
+	private ArrayList<User> getUserList(ArrayList<UserHandler> list){
+		ArrayList<User> userList = new ArrayList<User>();
+		for (UserHandler userHandler : list) {
+			userList.add(userHandler.getUser());
+		}
+		return userList;
 	}
 
 	/**
@@ -217,55 +282,17 @@ public class UserHandler implements Runnable{
 		sendMessageToCurrentUserHandlers(statusMessage);
 		Server.removeFromCurrentUserHandlers(this);
 	}
-
-	public void run(){
-		try {
-			ObjectInputStream inFromClient = null;
-			ObjectOutputStream outToClient = null;
-			if(!TEST) {
-				if (Thread.currentThread().getName().equals("listen")) {
-					inFromClient = new ObjectInputStream(userSocket.getInputStream());
-					Message message;
-					while ((message = (Message) inFromClient.readObject()) != null && bRun!=false) {
-						System.out.println("Message received: " + message);
-						addToIncomingMessages(message);
-					}
-				} else if (Thread.currentThread().getName().equals("send")) {
-					outToClient = new ObjectOutputStream(userSocket.getOutputStream());
-					while(bRun != false) {
-						Message sendingMessage = outgoingMessages.poll();
-						if (sendingMessage != null) {
-							outToClient.writeObject(sendingMessage);
-						}
-					}
-				}
-				inFromClient.close(); outToClient.close();
-			}
-			if (Thread.currentThread().getName().equals("process")) {
-				while(bRun != false) {
-					Message incomingMessage = incomingMessages.poll();
-					if (incomingMessage != null) {
-						handleMessage(incomingMessage);
-					}
-				}
-			}
-		} catch (Exception e) {
-			System.out.println("Exception caught in run function");
-			System.out.println(e.getMessage());
-			e.printStackTrace();
-		}
-	}
 	
 	public static void main(String[] args) {
 		UserHandler.TEST = true;
-		UserHandler testOne = new UserHandler(null, new User("testOne"));
-		UserHandler testTwo = new UserHandler(null, new User("testTwo"));
-		UserHandler testThree = new UserHandler(null, new User("testThree"));
+		UserHandler testOne = new UserHandler(null, null, new User("testOne"));
+		UserHandler testTwo = new UserHandler(null, null, new User("testTwo"));
+		UserHandler testThree = new UserHandler(null, null, new User("testThree"));
 		Server.addToCurrentUserHandlers(testOne);
 		Server.addToCurrentUserHandlers(testTwo);
 		Server.addToCurrentUserHandlers(testThree);
 		
-		UserHandler testUH = new UserHandler(null, new User("testUser"));
+		UserHandler testUH = new UserHandler(null, null, new User("testUser"));
 		Server.addToCurrentUserHandlers(testUH);
 		
 		// Test with a chat message

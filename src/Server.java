@@ -1,4 +1,7 @@
+import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -30,12 +33,12 @@ public class Server {
 	 * For this to completely work, the 'run' function in 'UserHandler.java' must be
 	 * commented out so that an empty Socket can be passed into the test UserHandlers
 	 */
-	private static final boolean TEST = true;
+	private static final boolean TEST = false;
 
 	/**
 	 * The port where Server will listen for new connections is set before execution
 	 */
-	private static int listeningPort = 6789;
+	private static int listeningPort = 1234;
 
 	/**
 	 * This field is the ServerSocket which will listen for new connections.
@@ -81,8 +84,14 @@ public class Server {
 	private static void addNewClient(Message message, Socket cSocket) {
 		User newUser = new User(message.getMessageText());
 		UserHandler newUH;
-		newUH = new UserHandler(cSocket, newUser);
-		addToCurrentUserHandlers(newUH);
+		try {
+			ObjectInputStream inFromClient = new ObjectInputStream(cSocket.getInputStream());
+			ObjectOutputStream outToClient = new ObjectOutputStream(cSocket.getOutputStream());
+			newUH = new UserHandler(inFromClient, outToClient, newUser);
+			addToCurrentUserHandlers(newUH);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private static void test() {
@@ -117,6 +126,8 @@ public class Server {
 			test();
 		} else {
 			try {
+				InetAddress IP = InetAddress. getLocalHost();
+				System.out.println("Waiting on port: " + listeningPort + " with IP address: " + IP.getHostAddress());
 				welcomeSocket = new ServerSocket(listeningPort);
 				ObjectInputStream inFromClient = null;
 				while (true) {
@@ -136,6 +147,7 @@ public class Server {
 				e.printStackTrace();
 			} catch (Exception e) {
 				System.out.println("There was an issue setting up the server.");
+				System.out.println(e.getMessage());
 				e.printStackTrace();
 			}
 		}

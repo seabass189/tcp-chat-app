@@ -54,14 +54,15 @@ public class Client implements Runnable
 			System.out.print("Enter port to connect to: ");
 			int port = Integer.parseInt(in.readLine());
 			InetAddress address = InetAddress.getByName(host);
-			Socket clientSocket = new Socket(address, port);
+			clientSocket = new Socket(address, port);
 
 			//Input and output streams are instantiated using the generated socket
-			toServer = new ObjectOutputStream(clientSocket.getOutputStream());
-
+//			toServer = new ObjectOutputStream(clientSocket.getOutputStream());
+			
+			
 			//Sends and receives connection messages and gets its identifier from the Server
 			//and also prints out the other users in the chat room
-			User self = connect();
+			self = connect();
 
 			//The boolean stop remains false until the program is ended
 			stop = false;
@@ -98,9 +99,10 @@ public class Client implements Runnable
 		toServer.writeObject(connRequest);
 
 		//Upon acknowledgement the client extracts the data held in the message
+		toServer = new ObjectOutputStream(clientSocket.getOutputStream());
 		fromServer = new ObjectInputStream(clientSocket.getInputStream());
 		Message connAck = (Message)fromServer.readObject();
-		fromServer.close();
+//		fromServer.close();
 		Object[] details = connAck.getMessageDetails();
 
 		//The client's User object is updated to match the User held in the server
@@ -108,10 +110,11 @@ public class Client implements Runnable
 
 		//The arraylist of UserHandlers is extracted and the client iterates through the list
 		//to inform the user of the other users currently present
-		ArrayList<UserHandler> otherUsers = (ArrayList<UserHandler>)details[0];
+		@SuppressWarnings("unchecked")
+		ArrayList<User> otherUsers = (ArrayList<User>)details[0];
 		for(int i = 0; i<otherUsers.size(); i++)
 		{
-			System.out.println(otherUsers.get(i).getUser().getUsername()+" is in the room");
+			System.out.println(otherUsers.get(i).getUsername()+" is in the room");
 		}
 		return temp;
 	}
@@ -173,9 +176,9 @@ public class Client implements Runnable
 		Message received = null;
 		try
 		{
-			fromServer = new ObjectInputStream(clientSocket.getInputStream());
+//			fromServer = new ObjectInputStream(clientSocket.getInputStream());
 			received = (Message)fromServer.readObject();
-			fromServer.close();
+//			fromServer.close();
 		}
 		
 		catch(Exception e)
@@ -234,11 +237,14 @@ public class Client implements Runnable
 
 			//Upon receiving a message and verifying the disconnect acknowledgement
 			//sets the variable stop to true and thus ends the while loop
-			fromServer = new ObjectInputStream(clientSocket.getInputStream());
+//			fromServer = new ObjectInputStream(clientSocket.getInputStream());
 			Message ack = (Message)fromServer.readObject();
-			fromServer.close();
+//			fromServer.close();
 			if(ack.getType().equals(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE))
+			{
 				stop = true;
+				fromServer.close();
+			}
 		}
 		catch(Exception e)
 		{
