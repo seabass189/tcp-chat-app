@@ -52,7 +52,7 @@ public class Client implements Runnable
 
 			//Set a default address
 			InetAddress address = InetAddress.getLocalHost();
-			
+
 			//Prompts the user for host's name and port number to create a socket
 			System.out.print("Enter host to connect to (blank line for " +
 					address.getHostAddress() + "): ");
@@ -61,16 +61,16 @@ public class Client implements Runnable
 				address = InetAddress.getByName(hostString);
 				// TODO: Validate this input
 			}
-			
+
 			int port = Server.listeningPort;
-			
+
 			System.out.print("Enter port to connect to (blank line for " +
-			port + "): ");
+					port + "): ");
 			String portString = in.readLine();
 			if (!portString.equals("")) {
 				port = Integer.parseInt(portString);
 			}
-			
+
 			clientSocket = new Socket(address, port);
 
 			//Input and output streams are instantiated using the generated socket
@@ -241,10 +241,10 @@ public class Client implements Runnable
 				switch (received.getType()) {
 				case CHAT_MESSAGE:
 					System.out.print(received.getOriginatingUser().getUsername());
-          System.out.print(" (" 
-				      + received.getMessageTimestamp().getHour() + ":"
-              + received.getMessageTimestamp().getMinute() 
-              + ")");
+					System.out.print(" (" 
+							+ received.getMessageTimestamp().getHour() + ":"
+							+ received.getMessageTimestamp().getMinute() 
+							+ ")");
 					System.out.print(": ");
 					System.out.println(received.getMessageText());
 					break;
