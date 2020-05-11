@@ -40,11 +40,20 @@ public class Client implements Runnable
 	 * This field contains a boolean that is true while the program is running, and set to false when it should stop
 	 */
 	private boolean stop;
+	
+	/*
+	 * True if this client is a bot, false otherwise
+	 */
+	private boolean bot;
 
 
+	public Client() {
+		this(false);
+	}
 
-	public Client()
+	public Client(boolean bot)
 	{
+		this.bot = bot;
 		try
 		{
 			//Instantiates the reader for user input
@@ -52,25 +61,27 @@ public class Client implements Runnable
 
 			//Set a default address
 			InetAddress address = InetAddress.getLocalHost();
-
-			//Prompts the user for host's name and port number to create a socket
-			System.out.print("Enter host to connect to (blank line for " +
-					address.getHostAddress() + "): ");
-			String hostString = in.readLine();
-			if (!hostString.equals("")) {
-				address = InetAddress.getByName(hostString);
-				// TODO: Validate this input
-			}
-
 			int port = Server.DEFAULT_PORT;
 
-			System.out.print("Enter port to connect to (blank line for " +
-					port + "): ");
-			String portString = in.readLine();
-			if (!portString.equals("")) {
-				port = Integer.parseInt(portString);
+			if (!bot) {
+				//Prompts the user for host's name and port number to create a socket
+				System.out.print("Enter host to connect to (blank line for " +
+						address.getHostAddress() + "): ");
+				String hostString = in.readLine();
+				if (!hostString.equals("")) {
+					address = InetAddress.getByName(hostString);
+					// TODO: Validate this input
+				}
+	
+	
+				System.out.print("Enter port to connect to (blank line for " +
+						port + "): ");
+				String portString = in.readLine();
+				if (!portString.equals("")) {
+					port = Integer.parseInt(portString);
+				}
 			}
-
+			
 			clientSocket = new Socket(address, port);
 
 			//Input and output streams are instantiated using the generated socket
@@ -86,13 +97,15 @@ public class Client implements Runnable
 
 			//Two threads are generated with the user thread designed to listen for user input
 			//while the server thread waits for messages from the server
-			Thread user = new Thread(this, "user");
+			//Thread user = new Thread(this, "user");
+			Thread botThread = new Thread(this, "bot");
 			Thread server = new Thread(this, "server");
 
 			//The threads continue listening for input until the variable stop is changed
 			//and ends the while loop
-			user.start();
+			botThread.start();
 			server.start();
+			
 		}
 		catch(IOException e)
 		{
@@ -111,7 +124,11 @@ public class Client implements Runnable
 		System.out.print("Enter username: ");
 		String username;
 		try {
-			username = in.readLine();
+			if (bot) {
+				username = "BOT-" + this.hashCode();
+			} else {
+				username = in.readLine();
+			}
 			User ourUserObject = new User(username);
 
 			//Upon acknowledgement the client extracts the data held in the message
@@ -181,6 +198,12 @@ public class Client implements Runnable
 		{
 			serverInput();
 		}
+
+		//The server thread
+		else if(Thread.currentThread().getName().contentEquals("bot"))
+		{
+			botInput(self);
+		}
 	}
 
 	//Responds to input from the user
@@ -240,13 +263,7 @@ public class Client implements Runnable
 				Object[] details = received.getMessageDetails();
 				switch (received.getType()) {
 				case CHAT_MESSAGE:
-					System.out.print(received.getOriginatingUser().getUsername());
-					System.out.print(" (" 
-							+ received.getMessageTimestamp().getHour() + ":"
-							+ received.getMessageTimestamp().getMinute() 
-							+ ")");
-					System.out.print(": ");
-					System.out.println(received.getMessageText());
+					printChatMessage(received);
 					break;
 				case DISCONNECT_ACKNOWLEDGEMENT_MESSAGE:
 					stop = true;
@@ -262,6 +279,18 @@ public class Client implements Runnable
 				}
 			}
 		}
+	}
+
+	private void printChatMessage(Message received) {
+		if (!bot) {
+			System.out.print(received.getOriginatingUser().getUsername());
+			System.out.print(" (" 
+					+ received.getMessageTimestamp().getHour() + ":"
+					+ received.getMessageTimestamp().getMinute() 
+					+ ")");
+			System.out.print(": ");
+			System.out.println(received.getMessageText());
+		};
 	}
 
 	//Sends a chat message from the user to the server
@@ -310,9 +339,32 @@ public class Client implements Runnable
 			System.out.println(temp.getUsername()+" has left the room");
 		}
 	}
-
-	public static void main(String[] args)
+	
+	/**
+	 * Sends automated messages.
+	 * @param self
+	 */
+	private void botInput(User self)
 	{
-		Client client = new Client();
+
+		int messages = 0;
+		while(!stop)
+		{
+			sendMessage(self, "This is message #" + (messages++) + " from " + self.getUsername());
+			try {
+				Thread.sleep(1000 + (messages * 40) % 23);
+			} catch (InterruptedException e) {
+				stop = true;
+			}
+		}
+	}
+
+	public static void main(String[] args) throws InterruptedException
+	{
+		
+		for (int i = 0; i< 16; i++) {
+			for (int j = 0; j < i*i; j++) new Client(true);
+			Thread.sleep(10000);
+		}
 	}
 }

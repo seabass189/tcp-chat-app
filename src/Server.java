@@ -39,7 +39,7 @@ public class Server {
 	 * The port where Server will listen for new connections is set before execution
 	 * (This is public so that we can have a nice default for Client.java)
 	 */
-	public static int DEFAULT_PORT = 1234;
+	public static int DEFAULT_PORT = 6667;
 
 	/**
 	 * This field is the ServerSocket which will listen for new connections.
