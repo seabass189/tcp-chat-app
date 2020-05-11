@@ -200,8 +200,11 @@ public class Client implements Runnable
 			//If the message's type is Chat 
 			else if(received.getType().equals(MessageType.CHAT_MESSAGE))
 			{
+				System.out.print("");
 				//Prints out the message held in the Message object
-				System.out.println(received.getMessageText());
+				System.out.println(received.getOriginatingUser().getUsername() + " (" 
+				+ received.getMessageTimestamp().getHour() + ":" + received.getMessageTimestamp().getMinute() 
+				+ ") : " + received.getMessageText());
 			}
 		}
 	}
@@ -210,13 +213,13 @@ public class Client implements Runnable
 	private void sendMessage(User self, String text)
 	{
 		//Formats the message before sending
-		DateFormat format = new SimpleDateFormat("HH:mm");
-		Date date = new Date();
-		String timestamp = self.getUsername()+" "+format.format(date)+": ";
-		timestamp.concat(text);
+//		DateFormat format = new SimpleDateFormat("HH:mm");
+//		Date date = new Date();
+//		String timestamp = self.getUsername()+" "+format.format(date)+": ";
+//		timestamp.concat(text);
 		
 		//Creates a new instance of the Message objects and sends it to the server
-		Message message = new Message(MessageType.CHAT_MESSAGE, self, timestamp, null);
+		Message message = new Message(MessageType.CHAT_MESSAGE, self, text, null);
 		try 
 		{
 			toServer.writeObject(message);
