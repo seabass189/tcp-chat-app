@@ -98,13 +98,10 @@ public class UserHandler {
 		this.user = user;
 
 		if(!TEST) {
-			System.out.println("NOT A TEST");
-//			listeningThread= new Thread(this, "listen");//create a thread
 			listeningThread = new Thread(new Runnable()
 			{
 				@Override
 				public void run() {
-					System.out.println("In listen thread");
 					Message message;
 					try {
 						while ((message = (Message) inFromClient.readObject()) != null && bRun!=false) {
@@ -113,8 +110,6 @@ public class UserHandler {
 						}
 						inFromClient.close();
 					} catch (ClassNotFoundException | IOException e) {
-						sendDisconnAck();
-						sendDisconnUserStatus();
 						stop();
 					}
 				}
@@ -124,7 +119,6 @@ public class UserHandler {
 			{
 				@Override
 				public void run() {
-					System.out.println("In send thread");
 					try {
 						while(bRun != false) {
 							Message sendingMessage = outgoingMessages.poll();
@@ -134,8 +128,6 @@ public class UserHandler {
 						}
 						outToClient.close();
 					} catch (IOException e) {
-						sendDisconnAck();
-						sendDisconnUserStatus();
 						stop();
 					}	
 				}
@@ -158,8 +150,6 @@ public class UserHandler {
 		});
 		processingThread.start();
 		
-		System.out.println("Threads created");
-
 		sendConnectionAck();
 		sendConnUserStatus();
 	}
@@ -171,7 +161,6 @@ public class UserHandler {
 	private void sendConnectionAck() {
 		Object[] details = {getUserList(Server.getCurrentUserHandlers()), user};
 		Message ackMessage = new Message(MessageType.CONNECTION_ACKNOWLEDGEMENT_MESSAGE, User.SERVER, null, details);
-		System.out.println("CONN_ACK: " + ackMessage);
 		addToOutgoingMessages(ackMessage);
 	}
 	
@@ -249,8 +238,6 @@ public class UserHandler {
 			addToOutgoingMessages(message);
 			break;
 		case DISCONNECT_REQUEST_MESSAGE:
-			sendDisconnAck();
-			sendDisconnUserStatus();
 			stop();
 			break;
 		case CONNECTION_REQUEST_MESSAGE:
@@ -264,7 +251,11 @@ public class UserHandler {
 	 * Function to set boolean bRun to false, which will stop this UserHandler
 	 */
 	private void stop() {
-		bRun = false;
+		if (bRun) {
+			sendDisconnAck();
+			sendDisconnUserStatus();
+			bRun = false;
+		}
 	}
 	
 	/**
@@ -300,7 +291,7 @@ public class UserHandler {
 		Server.addToCurrentUserHandlers(testUH);
 		
 		// Test with a chat message
-		Message textMessage = new Message(MessageType.CHAT_MESSAGE, testUH.getUser(), "Hey lookin good", null);
+		Message textMessage = new Message(MessageType.CHAT_MESSAGE, testUH.getUser(), "test Test", null);
 		testUH.addToIncomingMessages(textMessage);
 		
 		// Test with a user status change message

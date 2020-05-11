@@ -110,10 +110,9 @@ public class Server {
 		for (Message message : incomingConnectionRequests) {
 			ObjectInputStream inFromClient;
 			try {
-				inFromClient = new ObjectInputStream(socket.getInputStream()); //TODO make sure this fix works
+				inFromClient = new ObjectInputStream(socket.getInputStream());
 				addNewClient(message, socket, inFromClient); 
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} 
 		}
