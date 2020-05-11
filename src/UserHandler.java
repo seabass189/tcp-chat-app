@@ -113,7 +113,9 @@ public class UserHandler {
 						}
 						inFromClient.close();
 					} catch (ClassNotFoundException | IOException e) {
-						e.printStackTrace();
+						sendDisconnAck();
+						sendDisconnUserStatus();
+						stop();
 					}
 				}
 			});
@@ -131,8 +133,10 @@ public class UserHandler {
 							}
 						}
 						outToClient.close();
-					} catch (Exception e) {
-						e.printStackTrace();
+					} catch (IOException e) {
+						sendDisconnAck();
+						sendDisconnUserStatus();
+						stop();
 					}	
 				}
 			});
