@@ -50,12 +50,27 @@ public class Client implements Runnable
 			//Instantiates the reader for user input
 			in = new BufferedReader(new InputStreamReader(System.in));
 
+			//Set a default address
+			InetAddress address = InetAddress.getLocalHost();
+			
 			//Prompts the user for host's name and port number to create a socket
-			System.out.print("Enter host to connect to: ");
-			String host = in.readLine();
-			System.out.print("Enter port to connect to: ");
-			int port = Integer.parseInt(in.readLine());
-			InetAddress address = InetAddress.getByName(host);
+			System.out.print("Enter host to connect to (blank line for " +
+					address.getHostAddress() + "): ");
+			String hostString = in.readLine();
+			if (!hostString.equals("")) {
+				address = InetAddress.getByName(hostString);
+				// TODO: Validate this input
+			}
+			
+			int port = Server.listeningPort;
+			
+			System.out.print("Enter port to connect to (blank line for " +
+			port + "): ");
+			String portString = in.readLine();
+			if (!portString.equals("")) {
+				port = Integer.parseInt(portString);
+			}
+			
 			clientSocket = new Socket(address, port);
 
 			//Input and output streams are instantiated using the generated socket
