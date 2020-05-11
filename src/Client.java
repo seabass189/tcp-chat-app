@@ -241,6 +241,10 @@ public class Client implements Runnable
 				switch (received.getType()) {
 				case CHAT_MESSAGE:
 					System.out.print(received.getOriginatingUser().getUsername());
+          System.out.print(" (" 
+				      + received.getMessageTimestamp().getHour() + ":"
+              + received.getMessageTimestamp().getMinute() 
+              + ")");
 					System.out.print(": ");
 					System.out.println(received.getMessageText());
 					break;
@@ -263,8 +267,6 @@ public class Client implements Runnable
 	//Sends a chat message from the user to the server
 	private void sendMessage(User self, String text)
 	{
-
-
 		//Creates a new instance of the Message objects and sends it to the server
 		Message message = new Message(MessageType.CHAT_MESSAGE, self, text, null);
 		try {
