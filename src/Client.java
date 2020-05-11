@@ -15,32 +15,34 @@ public class Client implements Runnable
 	 * This field contains the socket that connects to the Server
 	 */
 	private Socket clientSocket;
-	
+
 	/*
 	 * This field contains a BufferedReader that will accept the user's input
 	 */
 	private BufferedReader in;
-	
+
 	/*
 	 * This field contains a ObjectOutputStream that will send Messages to the server
 	 */
 	private ObjectOutputStream toServer;
-	
+
 	/*
 	 * This field contains a ObjectInputStream that will accept messages from the server
 	 */
 	private ObjectInputStream fromServer;
-	
+
 	/*
 	 * This field contains a User object that represents the client
 	 */
 	private User self;
-	
+
 	/*
-	 * This field contains a boolean that signifies whether the program should continue or end
+	 * This field contains a boolean that is true while the program is running, and set to false when it should stop
 	 */
 	private boolean stop;
-	
+
+
+
 	public Client()
 	{
 		try
@@ -57,9 +59,9 @@ public class Client implements Runnable
 			clientSocket = new Socket(address, port);
 
 			//Input and output streams are instantiated using the generated socket
-//			toServer = new ObjectOutputStream(clientSocket.getOutputStream());
-			
-			
+			//			toServer = new ObjectOutputStream(clientSocket.getOutputStream());
+
+
 			//Sends and receives connection messages and gets its identifier from the Server
 			//and also prints out the other users in the chat room
 			self = connect();
@@ -80,9 +82,10 @@ public class Client implements Runnable
 		catch(IOException e)
 		{
 			e.printStackTrace();
+			stop = true;
 		}
 	}
-	
+
 	//Sends a connection request message to the server to inform them. Receives an acknowledgement
 	//message and extracts a User objects and an ArrayList of UserHandlers. The User is used
 	//for further messages sent to the server. ArrayList is read through and printed to inform
@@ -94,176 +97,186 @@ public class Client implements Runnable
 		String username;
 		try {
 			username = in.readLine();
-			User temp = new User(username);
+			User ourUserObject = new User(username);
 
 			//Upon acknowledgement the client extracts the data held in the message
 			toServer = new ObjectOutputStream(clientSocket.getOutputStream());
 
 			//The User object is used to send a connection request Message to the server
-			Message connRequest = new Message(MessageType.CONNECTION_REQUEST_MESSAGE, temp, username, null);
+			Message connRequest = new Message(MessageType.CONNECTION_REQUEST_MESSAGE, ourUserObject, username, null);
 			toServer.writeObject(connRequest);
 
 			fromServer = new ObjectInputStream(clientSocket.getInputStream());
 			Message connAck = (Message)fromServer.readObject();
-//			fromServer.close();
+			//			fromServer.close();
 			Object[] details = connAck.getMessageDetails();
 
+
 			//The client's User object is updated to match the User held in the server
-			temp = (User)details[1];
+			ourUserObject = (User)details[1];
 
 			//The arraylist of UserHandlers is extracted and the client iterates through the list
 			//to inform the user of the other users currently present
 			@SuppressWarnings("unchecked")
 			ArrayList<User> otherUsers = (ArrayList<User>)details[0];
-			for(int i = 0; i<otherUsers.size(); i++)
-			{
-				System.out.println(otherUsers.get(i).getUsername()+" is in the room");
+
+
+			System.out.print("Welcome to the room! There are " + otherUsers.size() + " other users here");
+			if (otherUsers.size() > 0) {
+				System.out.print(" (");
+				for(int i = otherUsers.size() - 1; i>=0; i--)
+				{
+					System.out.print(otherUsers.get(i).getUsername());
+					if (i == 1) {
+						System.out.print(" and ");
+					}
+					else if (i > 0) {
+						System.out.print(", ");
+					}
+				}
+				System.out.print(")");
 			}
-			return temp;
+
+			System.out.println(".");
+
+			return ourUserObject;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			stop = true;
 		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			stop = true;
 		}
 		return null;
-		
+
 	}
-	
+
 	public void run()
 	{
-		while(!stop)
+		//The user thread
+		if(Thread.currentThread().getName().contentEquals("user"))
 		{
-			//The user thread
-			if(Thread.currentThread().getName().contentEquals("user"))
-			{
-				userInput(self);
-			}
-				
-			//The server thread
-			else if(Thread.currentThread().getName().contentEquals("server"))
-			{
-				serverInput();
-			}
+			userInput(self);
+		}
+
+		//The server thread
+		else if(Thread.currentThread().getName().contentEquals("server"))
+		{
+			serverInput();
 		}
 	}
-	
+
 	//Responds to input from the user
 	private void userInput(User self)
 	{
-		String text = null;
-		try
+
+		while(!stop)
 		{
-			//Reads the user's input
-			text = in.readLine();
-		}
-		
-		catch(IOException e)
-		{
-			System.out.println(e.getMessage());
-		}
-		
-		if(text!=null)
-		{
-			//If the input is not the string "." then the client sends a message
-			if(!text.contentEquals("."))
+			String text = null;
+			try
 			{
-				sendMessage(self, text);
+				//Reads the user's input
+				text = in.readLine();
 			}
-			
-			//If the input is the string "." then the client goes through termination
-			//procedures
-			else
+
+			catch(IOException e)
 			{
-				disconnect(self);
+				System.out.println(e.getMessage());
+			}
+
+			if(text!=null)
+			{
+				//If the input is not the string "." then the client sends a message
+				if(!text.contentEquals("."))
+				{
+					sendMessage(self, text);
+				}
+
+				//If the input is the string "." then the client goes through termination
+				//procedures
+				else
+				{
+					sendDisconnectRequest(self);
+				}
 			}
 		}
 	}
-	
+
 	//Responds to incoming messages from the server
 	private void serverInput()
 	{
-		//Client captures the message received from the server and its data
-		Message received = null;
-
-		try {
-			received = (Message)fromServer.readObject();
-		} catch (ClassNotFoundException | IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
-		if(received!=null)
+		while(!stop)
 		{
-			Object[] details = received.getMessageDetails();
-			
-			//If the message's type is User Status Change
-			if(received.getType().equals(MessageType.USER_STATUS_CHANGE_MESSAGE))
-			{
-				this.statusChange(details);
+			//Client captures the message received from the server and its data
+			Message received = null;
+
+			try {
+				received = (Message)fromServer.readObject();
+			} catch (ClassNotFoundException | IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				stop = true;
 			}
-			
-			//If the message's type is Chat 
-			else if(received.getType().equals(MessageType.CHAT_MESSAGE))
+
+			if(received!=null)
 			{
-				//Prints out the message held in the Message object
-				System.out.println(received.getMessageText());
+				Object[] details = received.getMessageDetails();
+				switch (received.getType()) {
+				case CHAT_MESSAGE:
+					System.out.print(received.getOriginatingUser().getUsername());
+					System.out.print(": ");
+					System.out.println(received.getMessageText());
+					break;
+				case DISCONNECT_ACKNOWLEDGEMENT_MESSAGE:
+					stop = true;
+					System.out.println("You have disconnected.");
+					//TODO: We might need to force stop other threads here? Maybe system.exit()?
+					break;
+				case USER_STATUS_CHANGE_MESSAGE:
+					this.statusChange(details);
+					break;
+				default:
+					System.out.println("Ignoring Invalid Message Type '" + received.getType() + "'.");
+					break;
+				}
 			}
 		}
 	}
-	
+
 	//Sends a chat message from the user to the server
 	private void sendMessage(User self, String text)
 	{
-		//Formats the message before sending
-		DateFormat format = new SimpleDateFormat("HH:mm");
-		Date date = new Date();
-		String timestamp = self.getUsername()+" "+format.format(date)+": ";
-		timestamp.concat(text);
-		
+
+
 		//Creates a new instance of the Message objects and sends it to the server
-		Message message = new Message(MessageType.CHAT_MESSAGE, self, timestamp, null);
+		Message message = new Message(MessageType.CHAT_MESSAGE, self, text, null);
 		try {
 			toServer.writeObject(message);
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
+			stop = true;
 		}
 	}
-	
+
 	//Sends a disconnect request to the server and upon acknowledgement terminates the threads
-	private void disconnect(User self)
+	private void sendDisconnectRequest(User self)
 	{
 		//Creates a disconnect request message and sends to server
 		Message request = new Message(MessageType.DISCONNECT_REQUEST_MESSAGE, self, null, null);
 		try {
 			toServer.writeObject(request);
 			//Upon receiving a message and verifying the disconnect acknowledgement
-			//sets the variable stop to true and thus ends the while loop
-//				fromServer = new ObjectInputStream(clientSocket.getInputStream());
-			Message ack = (Message)fromServer.readObject();
-				//			fromServer.close();
-				if(ack.getType().equals(MessageType.DISCONNECT_ACKNOWLEDGEMENT_MESSAGE))
-				{
-					stop = true;
-					fromServer.close();
-				}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			stop = true; //If this goes bad, then we really abort hard
-		} catch (ClassNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			stop = true; //If this goes bad, then we really abort hard
 		}
 
-
-
-
 	}
-	
+
 	//Prints a message reporting the change of a chat member's status
 	private void statusChange(Object[] details)
 	{
@@ -280,7 +293,7 @@ public class Client implements Runnable
 			System.out.println(temp.getUsername()+" has left the room");
 		}
 	}
-	
+
 	public static void main(String[] args)
 	{
 		Client client = new Client();
