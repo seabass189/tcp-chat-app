@@ -62,7 +62,7 @@ public class Client implements Runnable
 				// TODO: Validate this input
 			}
 
-			int port = Server.listeningPort;
+			int port = Server.DEFAULT_PORT;
 
 			System.out.print("Enter port to connect to (blank line for " +
 					port + "): ");

@@ -39,7 +39,7 @@ public class Server {
 	 * The port where Server will listen for new connections is set before execution
 	 * (This is public so that we can have a nice default for Client.java)
 	 */
-	public static int listeningPort = 1234;
+	public static int DEFAULT_PORT = 1234;
 
 	/**
 	 * This field is the ServerSocket which will listen for new connections.
@@ -134,8 +134,8 @@ public class Server {
 		} else {
 			try {
 				InetAddress IP = InetAddress. getLocalHost();
-				System.out.println("Waiting on port: " + listeningPort + " with IP address: " + IP.getHostAddress());
-				welcomeSocket = new ServerSocket(listeningPort);
+				System.out.println("Waiting on port: " + DEFAULT_PORT + " with IP address: " + IP.getHostAddress());
+				welcomeSocket = new ServerSocket(DEFAULT_PORT);
 				while (true) {
 					Socket cSocket = welcomeSocket.accept();
 					ObjectInputStream inFromClient = new ObjectInputStream(cSocket.getInputStream());
